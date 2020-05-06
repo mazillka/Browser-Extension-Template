@@ -2,8 +2,8 @@
     "manifest_version": 2,
     "name": "Extension Template",
     "short_name": "Extension Template",
-    "version": "0.1",
-    "author": "Andrii Shevchuk-Yuhanets(Mazillka)",
+    "version": "1.0.0",
+    "author": "Andrii Shevchuk-Yuhanets",
     "description": "Extension Template",
     "icons": {
         "16": "icons/16x16.png",
@@ -14,10 +14,22 @@
     },
     "background": {
         "scripts": [
-            "js/background.js"
+            "background.js"
         ],
         "persistent": false
     },
+    "content_scripts": [
+        {
+            "all_frames": true,
+            "js": [
+                "contentscript.js"
+            ],
+            "matches": [
+                "*://*/*"
+            ],
+            "run_at": "document_start"
+        }
+    ],
     "browser_action": {
         "default_icon": "icons/48x48.png",
         "default_popup": "html/popup.html"

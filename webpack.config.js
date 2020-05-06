@@ -1,45 +1,114 @@
-const path = require('path');
-const copy = require('copy-webpack-plugin');
-const miniCssExtractPlugin = require("mini-css-extract-plugin");
-const optimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+const devMode = process.env.NODE_ENV !== "production";
+const path = require("path");
+const HtmlWebPackPlugin = require("html-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
+const TerserPlugin = require("terser-webpack-plugin");
+const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+const ZipBundlerPlugin = require("webpack-zip-bundler");
+const PrettierPlugin = require("prettier-webpack-plugin");
+const CopyVersionPlugin = require("webpack-copy-version-plugin");
 
-module.exports = [{
-    watch: true,
-    entry: {
-        background: './src/background.js',
-        popup: './src/popup.js',
-        options: './src/options.js',
-    },
-    output: {
-        filename: '[name].js',
-        path: path.resolve(__dirname, './dist/js'),
-    },
-    module: {
-        rules: [{
-            test: /\.scss$/,
-            use: [
-                miniCssExtractPlugin.loader,
-                'css-loader',
-                'sass-loader'
-            ],
-        }]
-    },
-    plugins: [
-        new copy([
-            { from: './static/html', to: path.resolve(__dirname, './dist/html') },
-            { from: './static/icons', to: path.resolve(__dirname, './dist/icons') },
-            { from: './manifest.json', to: path.resolve(__dirname, './dist/') }
-        ]),
-        new miniCssExtractPlugin({
-            filename: "../css/[name].css"
-        }),
-        new optimizeCssAssetsPlugin({
-            assetNameRegExp: /\.css$/g,
-            cssProcessor: require('cssnano'),
-            cssProcessorPluginOptions: {
-                preset: ['default', { discardComments: { removeAll: true } }],
-            },
-            canPrint: true
-        })
-    ]
-}];
+module.exports = {
+	entry: {
+		contentscript: "./src/js/contentscript.js",
+		background: "./src/js/background.js",
+		popup: "./src/js/popup.js",
+		options: "./src/js/options.js",
+	},
+	output: {
+		filename: "[name].js",
+		path: path.resolve(__dirname, "./dist/"),
+	},
+	optimization: {
+		minimizer: [
+			new TerserPlugin({
+				terserOptions: {
+					output: {
+						comments: false,
+					},
+				},
+			}),
+			new OptimizeCssAssetsPlugin({
+				cssProcessor: require("cssnano"),
+				cssProcessorPluginOptions: {
+					preset: [
+						"default",
+						{
+							discardComments: {
+								removeAll: true,
+							},
+						},
+					],
+				},
+			}),
+		],
+	},
+	module: {
+		rules: [
+			// html
+			{
+				test: /\.html$/,
+				use: [
+					{
+						loader: "html-loader",
+						options: {
+							minimize: !devMode,
+							interpolate: true,
+							root: path.resolve(__dirname, "src"),
+							attrs: [":data-src"],
+						},
+					},
+				],
+			},
+
+			// sass, css
+			{
+				test: /\.(scss)|(css)$/,
+				use: [
+					{
+						loader: MiniCssExtractPlugin.loader,
+					},
+					{
+						loader: "css-loader",
+					},
+					{
+						loader: "postcss-loader",
+						options: {
+							plugins: () => {
+								return [require("precss"), require("autoprefixer")];
+							},
+						},
+					},
+					{
+						loader: "sass-loader",
+					},
+				],
+			},
+		],
+	},
+	plugins: [
+		new CleanWebpackPlugin(),
+
+		new CopyVersionPlugin({
+			from: "./package.json",
+			to: "./src/manifest.json",
+		}),
+
+		new CopyWebpackPlugin([
+			{ from: "./src/html", to: "html" },
+			{ from: "./src/icons", to: "icons" },
+			{ from: "./src/manifest.json", to: "manifest.json" },
+		]),
+
+		new MiniCssExtractPlugin({
+			filename: "[name].css",
+			chunkFilename: "[name].css",
+		}),
+
+		new ZipBundlerPlugin(),
+
+		new PrettierPlugin(),
+	],
+};
