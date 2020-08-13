@@ -55,9 +55,6 @@ module.exports = {
 						loader: "html-loader",
 						options: {
 							minimize: !devMode,
-							interpolate: true,
-							root: path.resolve(__dirname, "src"),
-							attrs: [":data-src"],
 						},
 					},
 				],
@@ -96,11 +93,13 @@ module.exports = {
 			to: "./src/manifest.json",
 		}),
 
-		new CopyWebpackPlugin([
-			{ from: "./src/html", to: "html" },
-			{ from: "./src/icons", to: "icons" },
-			{ from: "./src/manifest.json", to: "manifest.json" },
-		]),
+		new CopyWebpackPlugin({
+			patterns: [
+				{ from: "./src/html", to: "html" },
+				{ from: "./src/icons", to: "icons" },
+				{ from: "./src/manifest.json", to: "manifest.json" },
+			],
+		}),
 
 		new MiniCssExtractPlugin({
 			filename: "[name].css",
